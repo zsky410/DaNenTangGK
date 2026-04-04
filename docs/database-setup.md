@@ -2,6 +2,10 @@
 
 Tài liệu mô tả cấu hình đã áp dụng cho project (bảng `sanpham`, RLS, Storage).
 
+## 0. Tài khoản đăng nhập (Auth)
+
+Không có đăng ký trong app. Tạo user trong **Authentication → Users → Add user**, sau đó đăng nhập thủ công trên màn hình login.
+
 ## 1. Bảng `sanpham`
 
 Chạy trong **SQL Editor** (hoặc migration) trên Supabase:
@@ -75,9 +79,4 @@ USING (bucket_id = 'product-images');
 
 ## 5. Ảnh màn hình (nộp bài)
 
-Theo yêu cầu đề bài, nên chụp và lưu trong repo (ví dụ `docs/screenshots/`):
-
-- [ ] Table Editor — bảng `sanpham`
-- [ ] Storage — bucket `product-images` (public)
-
-*(Checklist ảnh: thêm file ảnh thủ công sau khi chụp.)*
+Có thể lưu tại `docs/screenshots/`: Table Editor (`sanpham`), Storage (`product-images`).
