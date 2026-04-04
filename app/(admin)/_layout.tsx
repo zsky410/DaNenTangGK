@@ -44,6 +44,13 @@ export default function AdminLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="edit/[id]"
+        options={{
+          href: null,
+          title: 'Sửa sản phẩm',
+        }}
+      />
     </Tabs>
   );
 }
