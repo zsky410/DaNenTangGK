@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react';
+import { friendlyRequestError } from '../lib/networkMessage';
+import { pathInProductImagesBucket } from '../lib/storagePaths';
 import { supabase } from '../lib/supabase';
 import { SanPham, SanPhamInsert, SanPhamUpdate } from '../types';
 
@@ -25,13 +27,14 @@ export function useProducts() {
         .select('*')
         .order('tensp', { ascending: true });
       if (queryError) {
-        setError(queryError.message);
+        setError(friendlyRequestError(queryError.message));
         setProducts([]);
         return;
       }
       setProducts((data ?? []) as SanPham[]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không tải được danh sách sản phẩm.');
+      const raw = e instanceof Error ? e.message : 'Không tải được danh sách sản phẩm.';
+      setError(friendlyRequestError(raw));
       setProducts([]);
     } finally {
       setLoading(false);
@@ -43,7 +46,7 @@ export function useProducts() {
       setError(null);
       const { error: insertError } = await supabase.from('sanpham').insert(product);
       if (insertError) {
-        setError(insertError.message);
+        setError(friendlyRequestError(insertError.message));
         throw insertError;
       }
       await fetchProducts();
@@ -60,7 +63,7 @@ export function useProducts() {
       setError(null);
       const { error: updateError } = await supabase.from('sanpham').update(updates).eq('idsanpham', id);
       if (updateError) {
-        setError(updateError.message);
+        setError(friendlyRequestError(updateError.message));
         throw updateError;
       }
       await fetchProducts();
@@ -75,11 +78,19 @@ export function useProducts() {
   const deleteProduct = async (id: string) => {
     try {
       setError(null);
+      const { data: row } = await supabase.from('sanpham').select('hinhanh').eq('idsanpham', id).maybeSingle();
+      const imagePath = pathInProductImagesBucket(row?.hinhanh ?? null);
+
       const { error: deleteError } = await supabase.from('sanpham').delete().eq('idsanpham', id);
       if (deleteError) {
-        setError(deleteError.message);
+        setError(friendlyRequestError(deleteError.message));
         throw deleteError;
       }
+
+      if (imagePath) {
+        await supabase.storage.from('product-images').remove([imagePath]);
+      }
+
       await fetchProducts();
     } catch (e) {
       if (!hasStringMessage(e)) {

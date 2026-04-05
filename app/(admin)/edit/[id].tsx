@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ProductForm } from '../../../components/ProductForm';
 import { useProducts } from '../../../hooks/useProducts';
+import { friendlyRequestError } from '../../../lib/networkMessage';
 import { supabase } from '../../../lib/supabase';
 import { SanPham, SanPhamInsert } from '../../../types';
 
@@ -12,27 +13,32 @@ export default function EditProductScreen() {
   const { updateProduct } = useProducts();
   const [product, setProduct] = useState<SanPham | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!id || typeof id !== 'string') {
       setLoading(false);
+      setLoadError(null);
+      setProduct(null);
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase.from('sanpham').select('*').eq('idsanpham', id).single();
-      if (cancelled) return;
-      if (error || !data) {
-        setProduct(null);
-      } else {
-        setProduct(data as SanPham);
-      }
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    setLoading(true);
+    setLoadError(null);
+    const { data, error } = await supabase.from('sanpham').select('*').eq('idsanpham', id).single();
+    if (error) {
+      setLoadError(friendlyRequestError(error.message));
+      setProduct(null);
+    } else if (!data) {
+      setProduct(null);
+    } else {
+      setProduct(data as SanPham);
+    }
+    setLoading(false);
   }, [id]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleSubmit = async (data: SanPhamInsert) => {
     if (!id || typeof id !== 'string') return;
@@ -48,6 +54,17 @@ export default function EditProductScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.muted}>{loadError}</Text>
+        <Pressable style={styles.retryBtn} onPress={() => void load()}>
+          <Text style={styles.retryLabel}>Thử lại</Text>
+        </Pressable>
       </View>
     );
   }
@@ -78,10 +95,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
     padding: 24,
+    gap: 16,
   },
   muted: {
     color: '#64748b',
     fontSize: 16,
     textAlign: 'center',
+  },
+  retryBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  retryLabel: {
+    color: '#1e3a5f',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

@@ -48,23 +48,31 @@ export type ProductFormProps = {
   loading?: boolean;
 };
 
+type PendingPick = { uri: string; mimeType: string };
+
 export function ProductForm({ mode, initialData, onSubmit, loading: parentLoading }: ProductFormProps) {
   const [tensp, setTensp] = useState('');
   const [loaisp, setLoaisp] = useState('');
   const [gia, setGia] = useState('');
-  const [hinhanh, setHinhanh] = useState<string | null>(null);
+  /** URL đã có trên server (sửa SP / sau khi submit thành công) */
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
+  /** Ảnh vừa chọn, chỉ upload khi bấm Thêm/Cập nhật */
+  const [pendingPick, setPendingPick] = useState<PendingPick | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const previewUri = pendingPick?.uri ?? savedImageUrl;
 
   useEffect(() => {
     if (!initialData) return;
     setTensp(initialData.tensp ?? '');
     setLoaisp(initialData.loaisp ?? '');
     setGia(initialData.gia != null ? String(initialData.gia) : '');
-    setHinhanh(initialData.hinhanh ?? null);
+    setSavedImageUrl(initialData.hinhanh ?? null);
+    setPendingPick(null);
   }, [initialData?.idsanpham, initialData?.tensp, initialData?.loaisp, initialData?.gia, initialData?.hinhanh]);
 
-  const pickAndUploadImage = async () => {
+  const pickImage = async () => {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
@@ -80,27 +88,12 @@ export function ProductForm({ mode, initialData, onSubmit, loading: parentLoadin
       const asset = result.assets[0];
       const uri = asset?.uri;
       if (!uri) return;
-
-      setUploading(true);
-      const mime = asset.mimeType ?? 'image/jpeg';
-      const ext = mime.includes('png') ? 'png' : 'jpeg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
-
-      const arrayBuffer = await readImageAsArrayBuffer(uri);
-
-      const { error: upError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, arrayBuffer, { contentType: mime, upsert: false });
-      if (upError) {
-        Alert.alert('Upload ảnh', upError.message);
-        return;
-      }
-      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
-      setHinhanh(urlData.publicUrl);
+      setPendingPick({
+        uri,
+        mimeType: asset.mimeType ?? 'image/jpeg',
+      });
     } catch (e) {
-      Alert.alert('Upload ảnh', e instanceof Error ? e.message : 'Không tải được ảnh lên.');
-    } finally {
-      setUploading(false);
+      Alert.alert('Chọn ảnh', e instanceof Error ? e.message : 'Không chọn được ảnh.');
     }
   };
 
@@ -123,13 +116,40 @@ export function ProductForm({ mode, initialData, onSubmit, loading: parentLoadin
 
     setSubmitting(true);
     try {
+      let hinhanhOut: string | null = savedImageUrl;
+      if (pendingPick) {
+        setUploading(true);
+        try {
+          const mime = pendingPick.mimeType;
+          const ext = mime.includes('png') ? 'png' : 'jpeg';
+          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+          const arrayBuffer = await readImageAsArrayBuffer(pendingPick.uri);
+          const { error: upError } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, arrayBuffer, { contentType: mime, upsert: false });
+          if (upError) {
+            Alert.alert('Upload ảnh', upError.message);
+            return;
+          }
+          const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+          hinhanhOut = urlData.publicUrl;
+        } catch (e) {
+          Alert.alert('Upload ảnh', e instanceof Error ? e.message : 'Không tải được ảnh lên.');
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+
       const payload: SanPhamInsert = {
         tensp: name,
         loaisp,
         gia: price,
-        hinhanh: hinhanh || null,
+        hinhanh: hinhanhOut,
       };
       await onSubmit(payload);
+      setPendingPick(null);
+      setSavedImageUrl(hinhanhOut);
     } catch {
       Alert.alert('Lỗi', mode === 'add' ? 'Không thêm được sản phẩm.' : 'Không cập nhật được sản phẩm.');
     } finally {
@@ -187,20 +207,14 @@ export function ProductForm({ mode, initialData, onSubmit, loading: parentLoadin
         <Text style={styles.label}>Hình ảnh</Text>
         <Pressable
           style={[styles.pickBtn, busy && styles.pickBtnDisabled]}
-          onPress={pickAndUploadImage}
+          onPress={pickImage}
           disabled={busy}
         >
-          {uploading ? (
-            <ActivityIndicator color="#1e3a5f" />
-          ) : (
-            <>
-              <Ionicons name="image-outline" size={20} color="#1e3a5f" />
-              <Text style={styles.pickBtnText}>Chọn ảnh</Text>
-            </>
-          )}
+          <Ionicons name="image-outline" size={20} color="#1e3a5f" />
+          <Text style={styles.pickBtnText}>Chọn ảnh</Text>
         </Pressable>
-        {hinhanh ? (
-          <Image source={{ uri: hinhanh }} style={styles.preview} resizeMode="cover" />
+        {previewUri ? (
+          <Image source={{ uri: previewUri }} style={styles.preview} resizeMode="cover" />
         ) : null}
 
         <Pressable
@@ -208,7 +222,7 @@ export function ProductForm({ mode, initialData, onSubmit, loading: parentLoadin
           onPress={handleSubmit}
           disabled={busy}
         >
-          {submitting || parentLoading ? (
+          {submitting || uploading || parentLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.submitText}>{mode === 'add' ? 'Thêm sản phẩm' : 'Cập nhật'}</Text>

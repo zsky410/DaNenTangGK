@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -79,6 +80,9 @@ export default function ProductsScreen() {
       {error ? (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
+          <Pressable style={styles.retryBtn} onPress={() => void fetchProducts()}>
+            <Text style={styles.retryLabel}>Thử lại</Text>
+          </Pressable>
         </View>
       ) : null}
       <FlatList
@@ -133,10 +137,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#fef2f2',
+    gap: 8,
   },
   errorText: {
     color: '#b91c1c',
     fontSize: 14,
+  },
+  retryBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  retryLabel: {
+    color: '#b91c1c',
+    fontSize: 14,
+    fontWeight: '600',
   },
   listPad: {
     paddingBottom: 24,

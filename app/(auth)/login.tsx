@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { friendlyRequestError } from '../../lib/networkMessage';
 import { supabase } from '../../lib/supabase';
 
 export default function LoginScreen() {
@@ -35,12 +36,13 @@ export default function LoginScreen() {
         password,
       });
       if (signError) {
-        setError(signError.message);
+        setError(friendlyRequestError(signError.message));
         return;
       }
       router.replace('/(admin)');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Đăng nhập thất bại.');
+      const raw = e instanceof Error ? e.message : 'Đăng nhập thất bại.';
+      setError(friendlyRequestError(raw));
     } finally {
       setLoading(false);
     }

@@ -1,22 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Pressable, Text } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import { SignOutButton } from '../../components/SignOutButton';
 
 export default function AdminLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerRight: () => (
-          <Pressable
-            onPress={() => {
-              void supabase.auth.signOut();
-            }}
-            style={{ marginRight: 16, paddingVertical: 4 }}
-          >
-            <Text style={{ color: '#c62828', fontWeight: '600' }}>Đăng xuất</Text>
-          </Pressable>
-        ),
+        headerRight: () => <SignOutButton />,
       }}
     >
       <Tabs.Screen
