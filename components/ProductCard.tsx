@@ -2,9 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SanPham } from '../types';
 
-const THUMB_WIDTH = 96;
-const THUMB_MIN_HEIGHT = 88;
-
 export type ProductCardProps = {
   product: SanPham;
   onEdit: () => void;
@@ -24,15 +21,13 @@ export function ProductCard({ product, onEdit, onDelete, onImagePress }: Product
       <Pressable
         onPress={hasImage ? onImagePress : undefined}
         disabled={!hasImage}
-        style={({ pressed }) => [styles.thumbPressable, pressed && hasImage && styles.thumbPressed]}
-        accessibilityRole={hasImage ? 'button' : undefined}
-        accessibilityLabel={hasImage ? 'Xem ảnh sản phẩm' : undefined}
+        style={({ pressed }) => [styles.imageWrap, pressed && hasImage && styles.imagePressed]}
       >
         {hasImage ? (
-          <Image source={{ uri: product.hinhanh! }} style={styles.thumbImage} resizeMode="cover" />
+          <Image source={{ uri: product.hinhanh! }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons name="image-outline" size={28} color="#94a3b8" />
+            <Ionicons name="image-outline" size={40} color="#94a3b8" />
           </View>
         )}
       </Pressable>
@@ -42,33 +37,27 @@ export function ProductCard({ product, onEdit, onDelete, onImagePress }: Product
           {product.tensp}
         </Text>
         <View style={styles.badge}>
-          <Text style={styles.badgeText} numberOfLines={1}>
-            {product.loaisp}
-          </Text>
+          <Text style={styles.badgeText}>{product.loaisp}</Text>
         </View>
+        <Text style={styles.price}>{formatVnd(product.gia)}</Text>
 
-        <View style={styles.footerRow}>
-          <Text style={styles.price} numberOfLines={1}>
-            {formatVnd(product.gia)}
-          </Text>
-          <View style={styles.actions}>
-            <Pressable
-              onPress={onEdit}
-              style={({ pressed }) => [styles.actionBtn, styles.editBtn, pressed && styles.btnPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Sửa sản phẩm"
-            >
-              <Ionicons name="pencil" size={17} color="#1e3a5f" />
-            </Pressable>
-            <Pressable
-              onPress={onDelete}
-              style={({ pressed }) => [styles.actionBtn, styles.deleteBtn, pressed && styles.btnPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Xóa sản phẩm"
-            >
-              <Ionicons name="trash-outline" size={17} color="#b91c1c" />
-            </Pressable>
-          </View>
+        <View style={styles.actions}>
+          <Pressable
+            onPress={onEdit}
+            style={({ pressed }) => [styles.iconBtn, styles.editBtn, pressed && styles.btnPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Sửa sản phẩm"
+          >
+            <Ionicons name="pencil" size={20} color="#1e3a5f" />
+          </Pressable>
+          <Pressable
+            onPress={onDelete}
+            style={({ pressed }) => [styles.iconBtn, styles.deleteBtn, pressed && styles.btnPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Xóa sản phẩm"
+          >
+            <Ionicons name="trash-outline" size={20} color="#b91c1c" />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -77,94 +66,76 @@ export function ProductCard({ product, onEdit, onDelete, onImagePress }: Product
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
+    overflow: 'hidden',
     marginHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    overflow: 'hidden',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
-  /** Cột ảnh cố định chiều ngang, kéo cao theo nội dung bên phải */
-  thumbPressable: {
-    width: THUMB_WIDTH,
-    minHeight: THUMB_MIN_HEIGHT,
-    alignSelf: 'stretch',
+  imageWrap: {
+    height: 160,
+    width: '100%',
     backgroundColor: '#f1f5f9',
   },
-  thumbPressed: {
-    opacity: 0.88,
+  imagePressed: {
+    opacity: 0.92,
   },
-  thumbImage: {
-    ...StyleSheet.absoluteFillObject,
+  image: {
+    width: '100%',
+    height: '100%',
   },
   placeholder: {
     flex: 1,
-    minHeight: THUMB_MIN_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#e2e8f0',
   },
   body: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingRight: 12,
-    paddingLeft: 12,
-    justifyContent: 'center',
-    minHeight: THUMB_MIN_HEIGHT,
+    padding: 14,
   },
   title: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#0f172a',
-    lineHeight: 20,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: '#e0e7ff',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 6,
-    maxWidth: '100%',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#3730a3',
   },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 'auto',
-  },
   price: {
-    flex: 1,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1e3a5f',
-    minWidth: 0,
+    marginBottom: 12,
   },
   actions: {
     flexDirection: 'row',
-    gap: 6,
-    flexShrink: 0,
+    gap: 10,
   },
-  actionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  iconBtn: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
   },
   editBtn: {
